@@ -3,7 +3,6 @@ from datetime import datetime, timezone
 from fastapi import FastAPI, Query, HTTPException, Request, Path, status, Response
 import httpx
 from contextlib import asynccontextmanager
-from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
