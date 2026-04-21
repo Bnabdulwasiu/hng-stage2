@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from fastapi import FastAPI, Query, HTTPException, Request, Path, status, Response
+from fastapi import FastAPI, HTTPException, Request, status, Response
 import httpx
 from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
@@ -10,7 +10,7 @@ import asyncio
 from database import *
 from schemas import *
 from models import Profile
-from utils import get_age_group
+from utils import get_age_group, profile_to_dict
 
 
 # Database Setup
@@ -77,20 +77,6 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
             "message": "name is not a string"
         }
     )
-
-def _profile_to_dict(profile: Profile) -> dict:
-    return {
-        "id": profile.id,
-        "name": profile.name,
-        "gender": profile.gender,
-        "gender_probability": profile.gender_probability,
-        "sample_size": profile.sample_size,
-        "age": profile.age,
-        "age_group": profile.age_group,
-        "country_id": profile.country_id,
-        "country_probability": profile.country_probability,
-        "created_at": profile.created_at,
-    }
 
 
 # Post function
@@ -163,7 +149,7 @@ async def create_profile(body: CreateProfileRequest):
 
             return JSONResponse(status_code=201, content={
                 "status": "success",
-                "data": _profile_to_dict(profile)
+                "data": profile_to_dict(profile)
             })
 
         except IntegrityError:
@@ -177,7 +163,7 @@ async def create_profile(body: CreateProfileRequest):
             return JSONResponse(status_code=200, content={
                 "status": "success",
                 "message": "Profile already exists",
-                "data": _profile_to_dict(existing)
+                "data": profile_to_dict(existing)
             })
 
 
@@ -204,7 +190,7 @@ async def get_all_profiles(
         return {
             "status": "success",
             "count": len(profiles),
-            "data": [_profile_to_dict(p) for p in profiles]
+            "data": [profile_to_dict(p) for p in profiles]
         }
 
 
@@ -220,7 +206,7 @@ async def get_profile(profile_id: str):
                 "message": "Profile not found"
             })
 
-        return {"status": "success", "data": _profile_to_dict(profile)}
+        return {"status": "success", "data": profile_to_dict(profile)}
 
     
 @app.delete("/api/profiles/{profile_id}", status_code=status.HTTP_204_NO_CONTENT)

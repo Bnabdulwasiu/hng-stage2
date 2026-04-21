@@ -3,7 +3,6 @@ import uuid6
 
 from database import Base
 
-
 class Profile(Base):
     __tablename__ = "profiles"
     id = Column(String, primary_key=True, default=lambda: str(uuid6.uuid7()))

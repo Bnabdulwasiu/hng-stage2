@@ -1,4 +1,5 @@
 from fastapi import HTTPException
+from models import Profile
 
 #Helper functions
 def error_response(status_code: int, message: str):
@@ -22,3 +23,18 @@ def get_age_group(age: int | None) -> str | None:
         return "adult"
     else:
         return "senior"
+
+
+def profile_to_dict(profile: Profile) -> dict:
+    return {
+        "id": profile.id,
+        "name": profile.name,
+        "gender": profile.gender,
+        "gender_probability": profile.gender_probability,
+        "sample_size": profile.sample_size,
+        "age": profile.age,
+        "age_group": profile.age_group,
+        "country_id": profile.country_id,
+        "country_probability": profile.country_probability,
+        "created_at": profile.created_at,
+    }
