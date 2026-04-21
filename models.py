@@ -14,4 +14,4 @@ class Profile(Base):
     country_id = Column(String(2), nullable=False)
     country_name = Column(String, nullable=False)
     country_probability = Column(Float, nullable=False)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"))
