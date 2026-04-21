@@ -9,53 +9,14 @@ from fastapi.exceptions import RequestValidationError
 import asyncio
 from database import *
 from schemas import *
+from models import Profile
+from utils import get_age_group
 
 
 # Database Setup
-
-from sqlalchemy import Column, String, Float, Integer
-import uuid6
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
-
-
-class Profile(Base):
-    __tablename__ = "profiles"
-    id = Column(String, primary_key=True, default=lambda: str(uuid6.uuid7()))
-    name = Column(String, unique=True, index=True)
-    gender = Column(String, nullable=True)
-    gender_probability = Column(Float, nullable=True)
-    sample_size = Column(Integer, nullable=True)
-    age = Column(Integer, nullable=True)
-    age_group = Column(String, nullable=True)
-    country_id = Column(String, nullable=True)
-    country_probability = Column(Float, nullable=True)
-    created_at = Column(String)
-
-
-#Helper functions
-def error_response(status_code: int, message: str):
-     raise HTTPException(
-          status_code=status_code,
-          detail={
-               "status": "error",
-               "message": message
-          }
-     )
-
-
-def get_age_group(age: int | None) -> str | None:
-    if age is None:
-        return None
-    if age <= 12:
-        return "child"
-    elif age <= 19:
-        return "teenager"
-    elif age <= 59:
-        return "adult"
-    else:
-        return "senior"
 
 
 @asynccontextmanager
