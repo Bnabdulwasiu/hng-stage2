@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Optional, List
+
 from fastapi import FastAPI, Query, HTTPException, Request, Path, status, Response
 import httpx
 from contextlib import asynccontextmanager
@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 import asyncio
 from database import *
+from schemas import *
 
 
 # Database Setup
