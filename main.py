@@ -8,41 +8,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 import asyncio
-from dotenv import load_dotenv
-import os
-load_dotenv()
-import urllib.parse
+from database import *
 
 
 # Database Setup
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import declarative_base, sessionmaker
+
 from sqlalchemy import Column, String, Float, Integer
 import uuid6
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
-user = os.getenv("DB_USER")
-password = os.getenv("DB_PASSWORD")
-host = os.getenv("DB_HOST")
-port = os.getenv("DB_PORT")
-db_name = os.getenv("DB_NAME")
-safe_password = urllib.parse.quote_plus(password)
 
-DATABASE_URL = f"postgresql+asyncpg://{user}:{safe_password}@{host}:{port}/{db_name}"
-
-
-engine = create_async_engine(DATABASE_URL,
-                             echo=False,
-                             pool_pre_ping=True,
-                             connect_args={
-        "prepared_statement_cache_size": 0,
-        "statement_cache_size": 0
-    }
-    )
-
-AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-Base = declarative_base()
 
 class Profile(Base):
     __tablename__ = "profiles"
@@ -57,26 +33,6 @@ class Profile(Base):
     country_probability = Column(Float, nullable=True)
     created_at = Column(String)
 
-class ProfileSchema(BaseModel):
-    id: str
-    name: str
-    gender: Optional[str]
-    gender_probability: Optional[float]
-    sample_size: Optional[int]
-    age: Optional[int]
-    age_group: Optional[str]
-    country_id: Optional[str]
-
-    class Config:
-        from_attributes = True
-
-class ProfileListResponse(BaseModel):
-    status: str = "success"
-    count: int
-    data: List[ProfileSchema]
-
-class CreateProfileRequest(BaseModel):
-    name: str
 
 #Helper functions
 def error_response(status_code: int, message: str):
