@@ -1,6 +1,6 @@
-from sqlalchemy import Column, String, Float, Integer
+from sqlalchemy import Column, String, Float, Integer, DateTime
 import uuid6
-
+from datetime import datetime, timezone
 from database import Base
 
 class Profile(Base):
@@ -9,9 +9,9 @@ class Profile(Base):
     name = Column(String, unique=True, index=True)
     gender = Column(String, nullable=True)
     gender_probability = Column(Float, nullable=True)
-    sample_size = Column(Integer, nullable=True)
     age = Column(Integer, nullable=True)
     age_group = Column(String, nullable=True)
-    country_id = Column(String, nullable=True)
+    country_id = Column(String(2), nullable=True)
+    country_name = Column(String, nullable=False)
     country_probability = Column(Float, nullable=True)
-    created_at = Column(String)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))

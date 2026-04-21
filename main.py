@@ -18,7 +18,6 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
 
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     #Create DB tables
@@ -77,7 +76,6 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
             "message": "name is not a string"
         }
     )
-
 
 # Post function
 @app.post("/api/profiles", status_code=201)
