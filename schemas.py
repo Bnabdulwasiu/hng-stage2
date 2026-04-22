@@ -20,7 +20,9 @@ class ProfileSchema(BaseModel):
 
 class ProfileListResponse(BaseModel):
     status: str = "success"
-    count: int
+    page: int
+    limit: int
+    total: int
     data: List[ProfileSchema]
 
 class CreateProfileRequest(BaseModel):

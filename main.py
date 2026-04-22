@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Request, status, Response
+from fastapi import FastAPI, HTTPException, Request, status, Response, Query
 import httpx
 from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,7 +12,7 @@ from utils import get_age_group, profile_to_dict, get_country_name, seed_databas
 
 
 # Database Setup
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.exc import IntegrityError
 
 
@@ -179,10 +179,10 @@ async def get_all_profiles(
     min_country_probability: Optional[float] = None,
     # Sorting
     sort_by: Optional[str] = None,       
-    order: Optional[str] = "asc",  
-    # # Pagination
-    # page: int = 1,
-    # limit: int = 10
+    order: str = Query(default="asc", pattern="^(asc|desc)$"),  
+    # Pagination
+    page: int = Query(default=1, ge=1),
+    limit: int = Query(default=10, ge=1, le=50)
 ):
     SORTABLE_FIELDS = {
         "age": Profile.age,
@@ -196,10 +196,22 @@ async def get_all_profiles(
         })
 
     # Validate order
-    if order not in ("asc", "desc"):
+    # if order not in ("asc", "desc"):
+    #     raise HTTPException(status_code=400, detail={
+    #         "status": "error",
+    #         "message": "Invalid order value. Must be 'asc' or 'desc'"
+    #     })
+    
+    # Validate pagination
+    if page < 1:
         raise HTTPException(status_code=400, detail={
             "status": "error",
-            "message": "Invalid order value. Must be 'asc' or 'desc'"
+            "message": "page must be >= 1"
+        })
+    if not (1 <= limit <= 50):
+        raise HTTPException(status_code=400, detail={
+            "status": "error",
+            "message": "limit must be between 1 and 50"
         })
     
     
@@ -221,17 +233,27 @@ async def get_all_profiles(
             query = query.where(Profile.gender_probability >= min_gender_probability)
         if min_country_probability is not None:                              
             query = query.where(Profile.country_probability >= min_country_probability)
+        
+        # Total count (before pagination) 
+        count_result = await session.execute(select(func.count()).select_from(query.subquery()))
+        total = count_result.scalar()
+
         # Sorting 
         if sort_by:
             column = SORTABLE_FIELDS[sort_by]
             query = query.order_by(column.desc() if order == "desc" else column.asc())
-
+        
+        # Pagination
+        offset = (page - 1) * limit
+        query = query.offset(offset).limit(limit)
         result = await session.execute(query)
         profiles = result.scalars().all()
 
         return {
             "status": "success",
-            "count": len(profiles),
+            "page": page,
+            "limit": limit,
+            "total": total,
             "data": [profile_to_dict(p) for p in profiles]
         }
 
