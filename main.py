@@ -70,12 +70,19 @@ async def custom_http_exception_handler(request: Request, exc: HTTPException):
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    first_error = exc.errors()[0]
+    field = first_error["loc"][-1]
+
+    if field == "name":
+        message = "name is not a string"
+    else:
+        message = first_error["msg"]
 
     return JSONResponse(
         status_code=422,
         content={
             "status": "error",
-            "message": "name is not a string"
+            "message": message
         }
     )
 
