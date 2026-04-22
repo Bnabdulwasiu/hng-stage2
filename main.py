@@ -201,26 +201,6 @@ async def get_all_profiles(
             "status": "error",
             "message": f"Invalid sort_by value. Must be one of: {', '.join(SORTABLE_FIELDS)}"
         })
-
-    # Validate order
-    # if order not in ("asc", "desc"):
-    #     raise HTTPException(status_code=400, detail={
-    #         "status": "error",
-    #         "message": "Invalid order value. Must be 'asc' or 'desc'"
-    #     })
-    
-    # Validate pagination
-    if page < 1:
-        raise HTTPException(status_code=400, detail={
-            "status": "error",
-            "message": "page must be >= 1"
-        })
-    if not (1 <= limit <= 50):
-        raise HTTPException(status_code=400, detail={
-            "status": "error",
-            "message": "limit must be between 1 and 50"
-        })
-    
     
     async with AsyncSessionLocal() as session:
         query = select(Profile)
