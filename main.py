@@ -10,7 +10,7 @@ import asyncio
 from database import *
 from schemas import *
 from models import Profile
-from utils import get_age_group, profile_to_dict
+from utils import get_age_group, profile_to_dict, get_country_name, seed_database
 
 
 # Database Setup
@@ -27,7 +27,11 @@ async def lifespan(app: FastAPI):
     app.state.genderize = httpx.AsyncClient(base_url="https://api.genderize.io", timeout=10.0)
     app.state.agify = httpx.AsyncClient(base_url="https://api.agify.io", timeout=10.0)
     app.state.nationalize = httpx.AsyncClient(base_url="https://api.nationalize.io", timeout=10.0)
+    
+    print("✅ Tables created")
+    asyncio.create_task(seed_database())
     yield
+
     await asyncio.gather(
 
         app.state.genderize.aclose(),
@@ -78,7 +82,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     )
 
 # Post function
-@app.post("/api/profiles", status_code=201)
+@app.post("/api/profiles", response_model=ProfileSchema, status_code=201)
 async def create_profile(body: CreateProfileRequest):
     name =  body.name.strip().lower()
     if not name:
@@ -126,17 +130,18 @@ async def create_profile(body: CreateProfileRequest):
 
         # Pick top country by probability
         top_country = max(countries, key=lambda c: c["probability"]) if countries else None
-        created_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        country_id=top_country["country_id"] if top_country else None
+        full_country_name = get_country_name(country_id)
+        
         profile = Profile(
             name=name,
             gender=gender_data.get("gender"),
             gender_probability=gender_data.get("probability"),
-            sample_size=gender_data.get("count"),
             age=age_data.get("age"),
             age_group=get_age_group(age_data.get("age")),
-            country_id=top_country["country_id"] if top_country else None,
+            country_id=country_id,
+            country_name=full_country_name,
             country_probability=top_country["probability"] if top_country else None,
-            created_at=created_at,
         )
 
         session.add(profile)
