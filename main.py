@@ -177,7 +177,32 @@ async def get_all_profiles(
     max_age: Optional[int] = None,
     min_gender_probability: Optional[float] = None,
     min_country_probability: Optional[float] = None,
+    # Sorting
+    sort_by: Optional[str] = None,       
+    order: Optional[str] = "asc",  
+    # # Pagination
+    # page: int = 1,
+    # limit: int = 10
 ):
+    SORTABLE_FIELDS = {
+        "age": Profile.age,
+        "created_at": Profile.created_at,
+        "gender_probability": Profile.gender_probability,
+    }
+    if sort_by and sort_by not in SORTABLE_FIELDS:
+        raise HTTPException(status_code=400, detail={
+            "status": "error",
+            "message": f"Invalid sort_by value. Must be one of: {', '.join(SORTABLE_FIELDS)}"
+        })
+
+    # Validate order
+    if order not in ("asc", "desc"):
+        raise HTTPException(status_code=400, detail={
+            "status": "error",
+            "message": "Invalid order value. Must be 'asc' or 'desc'"
+        })
+    
+    
     async with AsyncSessionLocal() as session:
         query = select(Profile)
 
@@ -196,6 +221,10 @@ async def get_all_profiles(
             query = query.where(Profile.gender_probability >= min_gender_probability)
         if min_country_probability is not None:                              
             query = query.where(Profile.country_probability >= min_country_probability)
+        # Sorting 
+        if sort_by:
+            column = SORTABLE_FIELDS[sort_by]
+            query = query.order_by(column.desc() if order == "desc" else column.asc())
 
         result = await session.execute(query)
         profiles = result.scalars().all()
