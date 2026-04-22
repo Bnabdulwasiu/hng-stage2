@@ -1,5 +1,3 @@
-from datetime import datetime, timezone
-
 from fastapi import FastAPI, HTTPException, Request, status, Response
 import httpx
 from contextlib import asynccontextmanager
@@ -174,7 +172,11 @@ async def create_profile(body: CreateProfileRequest):
 async def get_all_profiles(
     gender: Optional[str] = None,
     country_id: Optional[str] = None,
-    age_group: Optional[str] = None  # string not int
+    age_group: Optional[str] = None,
+    min_age: Optional[int] = None,
+    max_age: Optional[int] = None,
+    min_gender_probability: Optional[float] = None,
+    min_country_probability: Optional[float] = None,
 ):
     async with AsyncSessionLocal() as session:
         query = select(Profile)
@@ -186,6 +188,14 @@ async def get_all_profiles(
             query = query.where(Profile.country_id == country_id.upper())
         if age_group:
             query = query.where(Profile.age_group == age_group.lower())
+        if min_age is not None:                                              
+            query = query.where(Profile.age >= min_age)
+        if max_age is not None:                                              
+            query = query.where(Profile.age <= max_age)
+        if min_gender_probability is not None:                              
+            query = query.where(Profile.gender_probability >= min_gender_probability)
+        if min_country_probability is not None:                              
+            query = query.where(Profile.country_probability >= min_country_probability)
 
         result = await session.execute(query)
         profiles = result.scalars().all()
