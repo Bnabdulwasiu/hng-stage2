@@ -309,8 +309,8 @@ async def search_profiles(
 
         return {
             "status": "success",
-            "q": q,
-            "parsed_filters": filters,   # helpful for transparency/debugging
+            # "q": q,
+            # "parsed_filters": filters,   # helpful for transparency/debugging
             "page": page,
             "limit": limit,
             "total": total,
