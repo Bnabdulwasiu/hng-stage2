@@ -4,6 +4,7 @@ import pycountry
 from main import *
 import json
 from sqlalchemy.dialects.postgresql import insert
+import re
 
 #Helper functions
 def error_response(status_code: int, message: str):
