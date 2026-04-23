@@ -5,6 +5,7 @@ from main import *
 import json
 from sqlalchemy.dialects.postgresql import insert
 import re
+import uuid
 
 #Helper functions
 def error_response(status_code: int, message: str):
@@ -175,3 +176,11 @@ def parse_query(q: str) -> dict:
         filters["country_id"] = country_id
 
     return filters
+
+
+def is_valid_uuid(value: str) -> bool:
+    try:
+        uuid.UUID(str(value))
+        return True
+    except ValueError:
+        return False
