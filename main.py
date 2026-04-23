@@ -10,7 +10,7 @@ from database import *
 from schemas import *
 from models import Profile
 from utils import (get_age_group, profile_to_dict,
-                    get_country_name, seed_database, parse_query)
+                    get_country_name, seed_database, parse_query, is_valid_uuid)
 
 
 # Database Setup
@@ -319,6 +319,11 @@ async def search_profiles(
 
 @app.get("/api/profiles/{profile_id}")
 async def get_profile(profile_id: str):
+    if not is_valid_uuid(profile_id):
+        raise HTTPException(status_code=422, detail={
+            "status": "error",
+            "message": "Invalid parameter type"
+        })
     async with AsyncSessionLocal() as session:
         result = await session.execute(select(Profile).where(Profile.id == profile_id))
         profile = result.scalar_one_or_none()
@@ -334,18 +339,24 @@ async def get_profile(profile_id: str):
     
 @app.delete("/api/profiles/{profile_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_profile(profile_id: str):
-        async with AsyncSessionLocal() as session:
-            result = await session.execute(select(Profile).where(Profile.id == profile_id))
-            profile = result.scalar_one_or_none()
+    if not is_valid_uuid(profile_id):
+        raise HTTPException(status_code=422, detail={
+            "status": "error",
+            "message": "Invalid parameter type"
+        })
+    
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(select(Profile).where(Profile.id == profile_id))
+        profile = result.scalar_one_or_none()
 
-            if not profile:
-                raise HTTPException(status_code=404, detail={
-                    "status": "error",
-                    "message": "Profile not found"
-                })
-            
-            await session.delete(profile)
-            await session.commit()
+        if not profile:
+            raise HTTPException(status_code=404, detail={
+                "status": "error",
+                "message": "Profile not found"
+            })
+        
+        await session.delete(profile)
+        await session.commit()
 
-            # 4. Return Response(status_code=204) or simply None
-            return Response(status_code=status.HTTP_204_NO_CONTENT)
+        # 4. Return Response(status_code=204) or simply None
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
