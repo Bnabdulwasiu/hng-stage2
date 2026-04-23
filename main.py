@@ -1,4 +1,5 @@
-from fastapi import FastAPI, HTTPException, Request, status, Response, Query
+from fastapi import (FastAPI, HTTPException, Request,
+                      status, Response, Query)
 import httpx
 from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
@@ -8,7 +9,8 @@ import asyncio
 from database import *
 from schemas import *
 from models import Profile
-from utils import get_age_group, profile_to_dict, get_country_name, seed_database
+from utils import (get_age_group, profile_to_dict,
+                    get_country_name, seed_database, parse_query)
 
 
 # Database Setup
@@ -70,19 +72,26 @@ async def custom_http_exception_handler(request: Request, exc: HTTPException):
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    first_error = exc.errors()[0]
-    field = first_error["loc"][-1]
+    # first_error = exc.errors()[0]
+    # field = first_error["loc"][-1]
 
-    if field == "name":
-        message = "name is not a string"
-    else:
-        message = first_error["msg"]
+    # if field == "name":
+    #     message = "name is not a string"
+    # else:
+    #     message = first_error["msg"]
 
-    return JSONResponse(
+    # return JSONResponse(
+    #     status_code=422,
+    #     content={
+    #         "status": "error",
+    #         "message": message
+    #     }
+    # )
+        return JSONResponse(
         status_code=422,
         content={
             "status": "error",
-            "message": message
+            "message": "Invalid query parameters"
         }
     )
 
@@ -244,6 +253,69 @@ async def get_all_profiles(
             "data": [profile_to_dict(p) for p in profiles]
         }
 
+
+# Debug endpoint — proves parser works independently
+@app.get("/api/profiles/parse")
+async def parse_profile_query(q: str = Query(..., min_length=1)):
+    filters = parse_query(q)
+    if not filters:
+        raise HTTPException(status_code=400, detail={
+            "status": "error",
+            "message": "Unable to interpret query"
+        })
+    return {"q": q, "parsed_filters": filters}
+
+
+# Natural language search endpoint
+@app.get("/api/profiles/search")
+async def search_profiles(
+    q: str = Query(..., min_length=1),
+    page: int = Query(default=1, ge=1),
+    limit: int = Query(default=10, ge=1, le=50),
+):
+    filters = parse_query(q)
+    if not filters:
+        raise HTTPException(status_code=400, detail={
+            "status": "error",
+            "message": "Unable to interpret query"
+        })
+
+    async with AsyncSessionLocal() as session:
+        query = select(Profile)
+
+        if "gender" in filters:
+            query = query.where(Profile.gender == filters["gender"])
+        if "age_group" in filters:
+            query = query.where(Profile.age_group == filters["age_group"])
+        if "min_age" in filters:
+            query = query.where(Profile.age >= filters["min_age"])
+        if "max_age" in filters:
+            query = query.where(Profile.age <= filters["max_age"])
+        if "country_id" in filters:
+            query = query.where(Profile.country_id == filters["country_id"])
+        if "min_gender_probability" in filters:
+            query = query.where(Profile.gender_probability >= filters["min_gender_probability"])
+        if "min_country_probability" in filters:
+            query = query.where(Profile.country_probability >= filters["min_country_probability"])
+
+        count_result = await session.execute(select(func.count()).select_from(query.subquery()))
+        total = count_result.scalar()
+
+        offset = (page - 1) * limit
+        query = query.offset(offset).limit(limit)
+
+        result = await session.execute(query)
+        profiles = result.scalars().all()
+
+        return {
+            "status": "success",
+            "q": q,
+            "parsed_filters": filters,   # helpful for transparency/debugging
+            "page": page,
+            "limit": limit,
+            "total": total,
+            "data": [profile_to_dict(p) for p in profiles]
+        }
 
 @app.get("/api/profiles/{profile_id}")
 async def get_profile(profile_id: str):
